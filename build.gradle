@@ -1,0 +1,52 @@
+group 'com.marsdev'
+version '1.0'
+
+apply plugin: 'java'
+apply plugin: 'kotlin'
+apply plugin: 'maven'
+apply plugin: 'org.junit.platform.gradle.plugin'
+
+buildscript {
+    ext.kotlin_version = '1.1.0'
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        jcenter()
+    }
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0-M3'
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+    maven { url "http://dl.bintray.com/jetbrains/spek" }
+    jcenter()
+}
+
+junitPlatform {
+    filters {
+        engines {
+            include 'spek'
+        }
+    }
+}
+
+dependencies {
+    compile 'org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version'
+
+    compile 'com.gluonhq:maps:1.0.3-SNAPSHOT'
+
+    compile 'no.tornado:tornadofx:1.7.0'
+    compile 'org.ostermiller:utils:1.07.00'
+    compile 'org.slf4j:slf4j-api:1.7.21'
+    testCompile 'org.jetbrains.spek:spek-api:1.1.0-beta3'
+    testRuntime 'org.jetbrains.spek:spek-junit-platform-engine:1.1.0-beta3'
+    compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+}
+sourceSets {
+    main.java.srcDirs += 'src/main/kotlin'
+}
