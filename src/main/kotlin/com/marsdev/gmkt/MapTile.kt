@@ -1,6 +1,8 @@
 package com.marsdev.gmkt
 
+
 import javafx.beans.InvalidationListener
+import javafx.beans.Observable
 import javafx.beans.WeakInvalidationListener
 import javafx.beans.property.SimpleBooleanProperty
 import javafx.concurrent.Worker
@@ -11,18 +13,16 @@ import javafx.scene.image.WritableImage
 import javafx.scene.layout.Region
 import javafx.scene.paint.Color
 import javafx.scene.transform.Scale
+import java.lang.Math.floor
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 
-class Tile : Region() {
+/**
 
-    //static final String TILESERVER = "http://tile.openstreetmap.org/";//
-    //static final String TILESERVER = "http://otile1.mqcdn.com/tiles/1.0.0/map/";
-    private val mapArea: Area
-    private val myZoom: Int
-    private val i: Long
-    private val j: Long
-    private val covering = LinkedList<Tile>()
+ * @author johan
+ */
+class MapTile(val mapArea: MapArea, val zoom: Int, val i: Long, val j: Long) : Region() {
+    private val covering = LinkedList<MapTile>()
 
     private val debug = false
 
@@ -36,54 +36,35 @@ class Tile : Region() {
     internal val scale = Scale()
 
     private var temporaryImage: Image
-    static
-    {
-        WritableImage writableImage = new WritableImage(256, 256);
-        for (int x = 0; x < 256; x++) {
-        for (int y = 0; y < 256; y++) {
-        writableImage.getPixelWriter().setColor(x, y, Color.rgb(128, 128, 128));
-    }
-    }
-        temporaryImage = writableImage;
-    }
-
-    private var zl: InvalidationListener
-    private var iwpl: InvalidationListener
+    private val zl: InvalidationListener
+    private val iwpl: InvalidationListener
     private val loading = SimpleBooleanProperty()
-    private var parentTile: Tile?
-    private var imageWorker: Worker<Image>
+    private val parentTile: MapTile?
+    private val imageWorker: Worker<Image>
 
-    /**
-     * Create a specific MapTile for a zoomlevel, x-index and y-index
+    init {
+        val writableImage = WritableImage(256, 256)
+        for (x in 0..255) {
+            for (y in 0..255) {
+                writableImage.pixelWriter.setColor(x, y, Color.rgb(128, 128, 128))
+            }
+        }
+        temporaryImage = writableImage
 
-     * @param mapArea the mapArea that will hold this tile. We need a reference
-     * * to the MapArea as it contains the active zoom property
-     * *
-     * @param zoom the zoom level for this tile
-     * *
-     * @param i the x-index (between 0 and 2^zoom)
-     * *
-     * @param j the y-index (between 0 and 2^zoom)
-     */
-    fun MapTile(mapArea: Area, zoom: Int, i: Long, j: Long)  {
         val ig = createcnt.incrementAndGet()
         if (debug) println("Create tile #" + ig)
-        this.mapArea = mapArea
-        this.myZoom = zoom
-        this.i = i
-        this.j = j
         scale.pivotX = 0.0
         scale.pivotY = 0.0
-        getTransforms().add(scale)
+        transforms.add(scale)
         //String url = TILESERVER + zoom + "/" + i + "/" + j + ".png";
-        //        InputStream is = mapArea.tileTypeProperty().get().getInputStream(zoom, i, j);// , ig, ig).getBaseURL() + zoom + "/" + i + "/" + j + ".png";
-        //        if (debug) {
-        //            System.out.println("Creating maptile " + this + " with is = " + is);
-        //        }
+//        InputStream is = mapArea.tileTypeProperty().get().getInputStream(zoom, i, j);// , ig, ig).getBaseURL() + zoom + "/" + i + "/" + j + ".png";
+//        if (debug) {
+//            System.out.println("Creating maptile " + this + " with is = " + is);
+//        }
 
         val iv = ImageView(temporaryImage)
         if (debug) debugLabel.text = "[$zoom-$i-$j]"
-        getChildren().addAll(iv, debugLabel)
+        children.addAll(iv, debugLabel)
 
         imageWorker = mapArea.tileTypeProperty().get().getImage(zoom, i, j)
         loading.bind(imageWorker.progressProperty().lessThan(1.0))
@@ -97,16 +78,14 @@ class Tile : Region() {
         if (parentTile != null) {
             if (debug) println("[JVDBG] ASK " + parentTile + " to cover for " + this)
 
-            parentTile!!.addCovering(this)
+            parentTile.addCovering(this)
         }
 
         iwpl = createImageWorkerProgressListener()
         imageWorker.progressProperty().addListener(WeakInvalidationListener(iwpl))
         if (imageWorker.progress >= 1) {
             if (debug) println("[JVDBG] ASK " + parentTile + " to NOWFORGET for " + this)
-            if (parentTile != null) {
-                parentTile!!.removeCovering(this)
-            }
+            parentTile?.removeCovering(this)
         }
         zl = recalculate()
 
@@ -123,7 +102,7 @@ class Tile : Region() {
      * @return the zoomLevel of this tile.
      */
     fun getZoomLevel(): Int {
-        return myZoom
+        return zoom
     }
 
     /**
@@ -142,9 +121,9 @@ class Tile : Region() {
 
      * @param me a (new) tile which image is still loading
      */
-    fun addCovering(me: Tile) {
+    fun addCovering(me: MapTile) {
         covering.add(me)
-        setVisible(true)
+        isVisible = true
     }
 
     /**
@@ -153,7 +132,7 @@ class Tile : Region() {
 
      * @param me
      */
-    fun removeCovering(me: Tile) {
+    fun removeCovering(me: MapTile) {
         covering.remove(me)
         calculatePosition()
     }
@@ -163,7 +142,7 @@ class Tile : Region() {
 
      * @return the lower-level zoom tile that covers this tile.
      */
-    fun getCoveringTile(): Tile {
+    fun getCoveringTile(): MapTile? {
         return parentTile
     }
 
@@ -178,23 +157,27 @@ class Tile : Region() {
     }
 
     override fun toString(): String {
-        return "Tile[$myZoom] $i, $j"
+        return "Tile[$zoom] $i, $j"
     }
 
     private fun recalculate(): InvalidationListener {
-        return { o -> calculatePosition() }
+        return InvalidationListener { calculatePosition() }
+
     }
 
     private fun createImageWorkerProgressListener(): InvalidationListener {
-        val answer = { o ->
-            val progress = imageWorker.progress
-            //            System.out.println("IPL, p = "+progress+" for "+this);
-            if (progress >= 1.0) {
-                if (parentTile != null) {
-                    if (debug) println("[JVDBG] ASK " + parentTile + " to FORGET cover for " + this)
+        val answer = object : InvalidationListener {
+            override fun invalidated(observable: Observable) {
+                val progress = imageWorker.progress
+                //            System.out.println("IPL, p = "+progress+" for "+this);
+                if (progress >= 1.0) {
+                    if (parentTile != null) {
+                        if (debug) println("[JVDBG] ASK " + parentTile + " to FORGET cover for " + this)
 
-                    parentTile!!.removeCovering(this@Tile)
+                        parentTile.removeCovering(this@MapTile)
+                    }
                 }
+
             }
         }
         return answer
@@ -203,23 +186,24 @@ class Tile : Region() {
     private fun calculatePosition() {
         val currentZoom = mapArea.zoomProperty().get()
         val visibleWindow = floor(currentZoom + MapArea.TIPPING).toInt()
-        if (visibleWindow == myZoom || isCovering() || visibleWindow >= MapArea.MAX_ZOOM && myZoom == MapArea.MAX_ZOOM - 1) {
-            this.setVisible(true)
+        if (visibleWindow == zoom || isCovering() || visibleWindow >= MapArea.MAX_ZOOM && zoom == MapArea.MAX_ZOOM - 1) {
+            this.isVisible = true
 
         } else {
-            this.setVisible(false)
+            this.isVisible = false
         }
         if (debug) {
-            println("visible tile " + this + "? " + this.isVisible() + if (this.isVisible()) " covering? " + isCovering() else "")
-            if (this.isVisible() && this.isCovering()) {
+            println("visible tile " + this + "? " + this.isVisible + if (this.isVisible) " covering? " + isCovering() else "")
+            if (this.isVisible && this.isCovering()) {
                 println("covering for " + this.covering)
             }
         }
-        val sf = Math.pow(2.0, currentZoom - myZoom)
+        val sf = Math.pow(2.0, currentZoom - zoom)
         scale.x = sf
         scale.y = sf
-        setTranslateX(256.0 * i.toDouble() * sf)
-        setTranslateY(256.0 * j.toDouble() * sf)
+        translateX = 256.0 * i.toDouble() * sf
+        translateY = 256.0 * j.toDouble() * sf
     }
+
 
 }

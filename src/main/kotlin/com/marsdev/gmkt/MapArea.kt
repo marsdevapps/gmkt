@@ -15,24 +15,14 @@ import java.lang.Math.floor
 import java.lang.ref.SoftReference
 import java.util.*
 
-class Area : Group(), GMap {
-    override val mapView: Node
-        get() = this
+/**
 
-    /**
-     * When the zoom-factor is less than TIPPING below an integer, we will use
-     * the higher-level zoom and scale down.
-     */
-    val TIPPING = 0.2
-
-    /**
-     * The maximum zoom level this map supports.
-     */
-    val MAX_ZOOM = 20
-    private val tiles = arrayOfNulls<HashMap<*, *>>(MAX_ZOOM)
+ * @author johan
+ */
+class MapArea(val incomingTileType: ObjectProperty<MapTileType>) : Group(), BaseMap {
 
     private var nearestZoom: Int = 0
-
+    private val tiles = arrayOfNulls<HashMap<*, *>>(MAX_ZOOM)
     private val zoomProperty = SimpleDoubleProperty()
 
     private var lat: Double = 0.toDouble()
@@ -40,19 +30,18 @@ class Area : Group(), GMap {
     private var abortedTileLoad: Boolean = false
 
     private val debug = false
-    private var area: Rectangle = Rectangle()
+    private val area: Rectangle
     private val centerLon = SimpleDoubleProperty()
     private val centerLat = SimpleDoubleProperty()
 
-    private val tileType = SimpleObjectProperty<TileType>()
-
     private var sceneListener: InvalidationListener? = null
+    private val tileType = SimpleObjectProperty<MapTileType>();
 
-    fun MapArea(tileType: ObjectProperty<TileType>) {
-        this.tileType.bind(tileType)
+    init {
+        this.tileType.bind(incomingTileType)
 
         for (i in tiles.indices) {
-            tiles[i] = HashMap<Long, SoftReference<Tile>>()
+            tiles[i] = HashMap<Long, SoftReference<MapTile>>()
         }
         area = Rectangle(-10.0, -10.0, 810.0, 610.0)
         area.isVisible = false
@@ -71,7 +60,7 @@ class Area : Group(), GMap {
         //        });
         zoomProperty.addListener { ov, t, t1 -> nearestZoom = Math.min(floor(t1.toDouble() + TIPPING).toInt(), MAX_ZOOM - 1) }
 
-        this.tileType.addListener({ obs: ObservableValue<out TileType>, o: TileType, n: TileType ->
+        this.tileType.addListener({ obs: ObservableValue<out MapTileType>, o: MapTileType, n: MapTileType ->
             println("TileType was changed: " + n!!)
             if (n != null) {
                 reloadTiles()
@@ -82,7 +71,7 @@ class Area : Group(), GMap {
 
     }
 
-    fun tileTypeProperty(): ObjectProperty<TileType> {
+    fun tileTypeProperty(): ObjectProperty<MapTileType> {
         return tileType
     }
 
@@ -211,11 +200,10 @@ class Area : Group(), GMap {
     }
 
     override fun getMapPoint(lat: Double, lon: Double): Point2D {
-        return getMapPoint(zoomProperty.get(), lat, lon)!!
+        return getMapPoint(zoomProperty.get(), lat, lon)
     }
 
-    private fun getMapPoint(zoom: Double, lat: Double, lon: Double): Point2D? {
-        if (this.scene == null) return null
+    private fun getMapPoint(zoom: Double, lat: Double, lon: Double): Point2D {
         val n = Math.pow(2.0, zoom)
         val lat_rad = Math.PI * lat / 180
         val id = n / 360.0 * (180 + lon)
@@ -230,14 +218,14 @@ class Area : Group(), GMap {
         return answer
     }
 
-    override fun getMapPosition(sceneX: Double, sceneY: Double): MapPoint {
+    override fun getMapPosition(sceneX: Double, sceneY: Double): Position {
         val x = sceneX - this.translateX
         val y = sceneY - this.translateY
         val zoom = zoomProperty().get()
         val latrad = Math.PI - 2.0 * Math.PI * y / (Math.pow(2.0, zoom) * 256.0)
         val mlat = Math.toDegrees(Math.atan(Math.sinh(latrad)))
         val mlon = x / (256 * Math.pow(2.0, zoom)) * 360 - 180
-        return MapPoint(mlat, mlon)
+        return Position(mlat, mlon)
     }
 
     private fun calculateCenterCoords() {
@@ -251,11 +239,11 @@ class Area : Group(), GMap {
         centerLat.set(mlat)
     }
 
-    override fun centerLon(): DoubleProperty {
+    override fun centerLongitude(): DoubleProperty {
         return centerLon
     }
 
-    override fun centerLat(): DoubleProperty {
+    override fun centerLatitude(): DoubleProperty {
         return centerLat
     }
 
@@ -281,32 +269,29 @@ class Area : Group(), GMap {
         for (i in imin..imax - 1) {
             for (j in jmin..jmax - 1) {
                 val key = i * i_max + j
-                // LongTuple it = new LongTuple(i,j);
-                val ref = tiles[nearestZoom]!![key]
-                if (ref == null  ) {
-                    if (ref != null) {
-                        println("RECLAIMED: z=$nearestZoom,i=$i,j=$j")
-                    }
-                    val tile = Tile(this, nearestZoom, i, j)
-                    tiles[nearestZoom]?.put(key, SoftReference(tile))
+                var ref: SoftReference<MapTile>
+                if (tiles[nearestZoom]!![key] == null) {
+                    var tile = MapTile(this, nearestZoom, i, j)
+                    (tiles[nearestZoom] as HashMap<Long, SoftReference<MapTile>>).put(key, SoftReference(tile))
                     val covering = tile.getCoveringTile()
                     if (covering != null) {
                         if (!children.contains(covering)) {
                             children.add(covering)
                         }
                     }
-
                     children.add(tile)
                 } else {
-                    val tile = ref
+                    ref = tiles[nearestZoom]!![key] as SoftReference<MapTile>
+                    val tile = ref.get()
                     if (!children.contains(tile)) {
-                        children.add(tile as Node?)
+                        children.add(tile)
                     }
                 }
             }
         }
         calculateCenterCoords()
         cleanupTiles()
+
     }
 
     /**
@@ -322,7 +307,7 @@ class Area : Group(), GMap {
      * *
      * @return the lower-zoom tile which covers the specified tile
      */
-    protected fun findCovering(zoom: Int, i: Long, j: Long): Tile? {
+    fun findCovering(zoom: Int, i: Long, j: Long): MapTile? {
         var zoom = zoom
         var i = i
         var j = j
@@ -349,10 +334,14 @@ class Area : Group(), GMap {
      * *
      * @return the tile, only if it is still in the cache
      */
-    private fun findTile(zoom: Int, i: Long, j: Long): Tile? {
+    private fun findTile(zoom: Int, i: Long, j: Long): MapTile? {
         val key = i * (1 shl zoom) + j
-        val exists = tiles[zoom]!![key]
-        return exists?.get()
+        if (tiles[zoom]!![key] != null) {
+            val exists: SoftReference<MapTile> = tiles[zoom]!![key] as SoftReference<MapTile>
+            return exists.get()
+        } else {
+            return null
+        }
     }
 
     private fun cleanupTiles() {
@@ -360,12 +349,12 @@ class Area : Group(), GMap {
             println("START CLEANUP")
         }
         val zp = zoomProperty.get()
-        val toRemove = LinkedList<Tile>()
+        val toRemove = LinkedList<MapTile>()
         val parent = this.parent
         val children = this.children
         for (child in children) {
-            if (child is Tile) {
-                val tile = child as Tile
+            if (child is MapTile) {
+                val tile = child as MapTile
                 val intersects = tile.getBoundsInParent().intersects(area.boundsInParent)
                 if (debug) {
                     println("evaluate tile " + tile + ", is = " + intersects + ", tzoom = " + tile.getZoomLevel())
@@ -413,7 +402,7 @@ class Area : Group(), GMap {
         val toRemove = ArrayList<Node>()
         val children = this.children
         for (child in children) {
-            if (child is Tile) {
+            if (child is MapTile) {
                 toRemove.add(child)
             }
         }
@@ -423,6 +412,10 @@ class Area : Group(), GMap {
             tiles[i]?.clear()
         }
 
+    }
+
+    override fun getView(): Node {
+        return this
     }
 
     override fun install() {
@@ -454,4 +447,17 @@ class Area : Group(), GMap {
         clearTiles()
     }
 
+    companion object {
+
+        /**
+         * When the zoom-factor is less than TIPPING below an integer, we will use
+         * the higher-level zoom and scale down.
+         */
+        val TIPPING = 0.2
+
+        /**
+         * The maximum zoom level this map supports.
+         */
+        val MAX_ZOOM = 20
+    }
 }

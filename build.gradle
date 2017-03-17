@@ -7,7 +7,7 @@ apply plugin: 'maven'
 apply plugin: 'org.junit.platform.gradle.plugin'
 
 buildscript {
-    ext.kotlin_version = '1.1.0'
+    ext.kotlin_version = '1.1.1'
 
     repositories {
         mavenLocal()
@@ -38,10 +38,7 @@ junitPlatform {
 dependencies {
     compile 'org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version'
 
-    compile 'com.gluonhq:maps:1.0.3-SNAPSHOT'
-
-    compile 'no.tornado:tornadofx:1.7.0'
-    compile 'org.ostermiller:utils:1.07.00'
+    compile 'no.tornado:tornadofx:1.7.1-SNAPSHOT'
     compile 'org.slf4j:slf4j-api:1.7.21'
     testCompile 'org.jetbrains.spek:spek-api:1.1.0-beta3'
     testRuntime 'org.jetbrains.spek:spek-junit-platform-engine:1.1.0-beta3'
