@@ -35,7 +35,7 @@ class MapArea(val incomingTileType: ObjectProperty<MapTileType>) : Group(), Base
     private val centerLat = SimpleDoubleProperty()
 
     private var sceneListener: InvalidationListener? = null
-    private val tileType = SimpleObjectProperty<MapTileType>();
+    private val tileType = SimpleObjectProperty<MapTileType>()
 
     init {
         this.tileType.bind(incomingTileType)

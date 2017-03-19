@@ -4,7 +4,8 @@ import com.marsdev.gmkt.DefaultBaseMapProvider
 import com.marsdev.gmkt.LayeredMap
 import com.marsdev.gmkt.PositionLayer
 import com.marsdev.gmkt.TileProvider
-import com.marsdev.gmkt.providers.OSMTileProvider
+import com.marsdev.gmkt.providers.MapBoxTileProvider
+import com.marsdev.gmkt.providers.MapBoxTileType
 import javafx.application.Application
 import javafx.scene.Scene
 import javafx.scene.image.Image
@@ -20,9 +21,10 @@ class MapViewDemo : Application() {
 
     override fun start(primaryStage: Stage?) {
         val provider = DefaultBaseMapProvider()
-        val osmProvider = OSMTileProvider()
-        provider.tileProviderProperty().set(osmProvider)
-        provider.tileTypeProperty().set(osmProvider.getDefaultType())
+        // set MapBox API Access Token and local directory to store cached tiles....
+        val mbStreetsProvider = MapBoxTileProvider("", "")
+        provider.tileProviderProperty().set(mbStreetsProvider)
+        provider.tileTypeProperty().set(mbStreetsProvider.getTileType(MapBoxTileType.MAPBOX_STREETS))
 
         map = LayeredMap(provider)
 
@@ -40,8 +42,6 @@ class MapViewDemo : Application() {
         val scene = Scene(bp, 800.0, 650.0)
         primaryStage!!.setScene(scene)
         primaryStage.show()
-        //   map.setZoom(4);
-//        map.setViewport(52.0, 4.9, 50.1, 4.0)
         map.setViewport(30.0, -95.00, 29.1, -95.90)
 //          map.setCenter(29.70, -95.81)
         showMyLocation()

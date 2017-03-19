@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import java.util.logging.Logger
 
-class TileType(val tName: String, val uRL: String, val attributionNotice: String) : MapTileType {
+class TileType(val tName: String, val uRL: String, val accessToken: String = "none") : MapTileType {
     private val debug = false
 
     lateinit private var typeName: String
@@ -79,8 +79,15 @@ class TileType(val tName: String, val uRL: String, val attributionNotice: String
     }
 
     protected fun calculateURL(zoom: Int, i: Long, j: Long): String {
-        println(baseURL + zoom + "/" + i + "/" + j + ".png")
-        return baseURL + zoom + "/" + i + "/" + j + ".png"
+        var tileURL = baseURL + zoom + "/" + i + "/" + j + ".png"
+        if (accessToken == "none") {
+            println(tileURL)
+            return tileURL
+        } else {
+            tileURL += accessToken
+            println(tileURL)
+            return tileURL
+        }
     }
 
     override fun toString(): String {
