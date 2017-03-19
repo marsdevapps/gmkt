@@ -10,6 +10,7 @@ class OSMTileProvider : TileProvider {
 
     init {
         tileTypes.add(TileType("Map", "http://tile.openstreetmap.org/", "© OpenStreetMap contributors"))
+        tileTypes[0].setFileStorageBase(System.getProperty("fileProvider"))
     }
 
     override fun getProviderName(): String {

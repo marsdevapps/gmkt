@@ -13,15 +13,14 @@ class DefaultBaseMapProvider : BaseMapProvider {
     private val selectedTileType = SimpleObjectProperty<MapTileType>()
 
     init {
-        val mapName = "OpenMapFX Tiled Map"
         val osmTileProvider = OSMTileProvider()
         tileProviders.add(osmTileProvider)
         tileProvider.set(osmTileProvider)
         selectedTileType.set(osmTileProvider.getDefaultType())
 
         if (System.getProperty("fileProvider") != null) {
-            val fp = FileProvider(pName = "OSM local", baseUrl = System.getProperty("fileProvider"));
-            tileProviders.add(fp);
+            val fp = FileProvider(pName = "OSM local", baseUrl = System.getProperty("fileProvider"))
+            tileProviders.add(fp)
         }
     }
 

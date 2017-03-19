@@ -41,12 +41,13 @@ class MapViewDemo : Application() {
         primaryStage!!.setScene(scene)
         primaryStage.show()
         //   map.setZoom(4);
-        map.setViewport(52.0, 4.9, 50.1, 4.0)
-        //  map.setCenter(50.2, 4.2);
+//        map.setViewport(52.0, 4.9, 50.1, 4.0)
+        map.setViewport(30.0, -95.00, 29.1, -95.90)
+//          map.setCenter(29.70, -95.81)
         showMyLocation()
         map.setZoom(10.0)
 
-        val p = map.getMapArea().getMapPosition(10.0, 100.0)
+        val p = map.getMapArea().getMapPosition(29.70, -95.81)
         System.out.println("position = " + p.latitude + ", " + p.longitude)
 
 
@@ -57,7 +58,7 @@ class MapViewDemo : Application() {
         val image = Image(im.toString())
         val positionLayer = PositionLayer(ImageView(image), (image.width / -2.0), (image.height / -2.0))
         map.getLayers().add(positionLayer)
-        positionLayer.updatePosition(51.2, 4.2)
+        positionLayer.updatePosition(29.70, -95.81)
         map.centerLatitudeProperty().addListener { i -> System.out.println("center of map: lat = " + map.centerLatitudeProperty().get() + ", lon = " + map.centerLongitudeProperty().get()) }
     }
 

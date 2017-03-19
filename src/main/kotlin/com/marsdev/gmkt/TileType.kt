@@ -133,8 +133,10 @@ class TileType(val tName: String, val uRL: String, val attributionNotice: String
 
         fun getCachedFile(zoom: Int, i: Long, j: Long): String? {
             val enc = File.separator + zoom + File.separator + i + File.separator + j + ".png"
+            println("looking for " + enc + " in " + basePath)
             val candidate = File(basePath, enc)
             if (candidate.exists()) {
+                println("FOUND " + enc + " in " + basePath)
                 return candidate.toURI().toString()
             }
             return null
@@ -143,6 +145,7 @@ class TileType(val tName: String, val uRL: String, val attributionNotice: String
         private fun doCache(urlString: String, zoom: Int, i: Long, j: Long) {
             try {
                 val url = URL(urlString)
+                println("Loading tile from URL " + urlString)
                 url.openConnection().getInputStream().use { inputStream ->
                     val enc = File.separator + zoom + File.separator + i + File.separator + j + ".png"
                     val candidate = File(basePath, enc)
@@ -155,6 +158,7 @@ class TileType(val tName: String, val uRL: String, val attributionNotice: String
                             len = inputStream.read(buff)
                         }
                     }
+                    println("Written tile from URL " + urlString + " to " + candidate)
                 }
             } catch (ex: MalformedURLException) {
                 Logger.getLogger(TileType::class.java.name).log(Level.SEVERE, null, ex)
