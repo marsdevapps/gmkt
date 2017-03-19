@@ -1,9 +1,6 @@
 package com.marsdev.gmkt.demo
 
-import com.marsdev.gmkt.DefaultBaseMapProvider
-import com.marsdev.gmkt.LayeredMap
-import com.marsdev.gmkt.PositionLayer
-import com.marsdev.gmkt.TileProvider
+import com.marsdev.gmkt.*
 import com.marsdev.gmkt.providers.MapBoxTileProvider
 import com.marsdev.gmkt.providers.MapBoxTileType
 import javafx.application.Application
@@ -16,6 +13,7 @@ import javafx.stage.Stage
 
 class MapViewDemo : Application() {
     lateinit internal var map: LayeredMap
+
 
     internal var tileProviders: Array<TileProvider>? = null
 
@@ -46,6 +44,9 @@ class MapViewDemo : Application() {
 //          map.setCenter(29.70, -95.81)
         showMyLocation()
         map.setZoom(10.0)
+
+        val licenseLayer = LicenseLayer(provider)
+        map.getLayers().add(licenseLayer)
 
         val p = map.getMapArea().getMapPosition(29.70, -95.81)
         System.out.println("position = " + p.latitude + ", " + p.longitude)
