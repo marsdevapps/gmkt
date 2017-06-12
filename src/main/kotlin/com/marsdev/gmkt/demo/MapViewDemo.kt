@@ -22,7 +22,7 @@ class MapViewDemo : Application() {
     override fun start(primaryStage: Stage?) {
         val provider = DefaultBaseMapProvider()
         // set MapBox API Access Token and local directory to store cached tiles....
-        val mbStreetsProvider = MapBoxTileProvider("?access_token=pk.eyJ1IjoibWFyc2RldiIsImEiOiJjaXV4MjY5MGQwNHk3MnVwc21ubm1mcGtiIn0.7S5uxzW6PsgufoZqAY1mww", "G:\\mapbox-tiles")
+        val mbStreetsProvider = MapBoxTileProvider("", "")
         provider.tileProviderProperty().set(mbStreetsProvider)
         provider.tileTypeProperty().set(mbStreetsProvider.getTileType(MapBoxTileType.MAPBOX_STREETS))
 
@@ -69,7 +69,7 @@ class MapViewDemo : Application() {
     fun addBuses() {
         val multiPositionLayer = MultiPositionLayer(map)
         val reader = OneLineReader()
-        val placemarks = reader.getPlacemarks("D:\\trading-work\\ercot\\network\\2017.JUL.Monthly.Auction.OneLineDiagram.kml")
+        val placemarks = reader.getPlacemarks("")
         val buses = reader.processBuses(placemarks)
 //        val branches = reader.processBranches(placemarks, buses)
         val im = this.javaClass.getResource("/com/marsdev/gmkt/demo/mylocation.png")
