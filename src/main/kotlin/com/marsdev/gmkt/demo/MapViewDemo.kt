@@ -5,9 +5,11 @@ import com.marsdev.gmkt.providers.MapBoxTileProvider
 import com.marsdev.gmkt.providers.MapBoxTileType
 import javafx.application.Application
 import javafx.scene.Scene
+import javafx.scene.control.Tooltip
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.layout.BorderPane
+import javafx.scene.shape.Circle
 import javafx.scene.shape.Rectangle
 import javafx.stage.Stage
 
@@ -20,7 +22,7 @@ class MapViewDemo : Application() {
     override fun start(primaryStage: Stage?) {
         val provider = DefaultBaseMapProvider()
         // set MapBox API Access Token and local directory to store cached tiles....
-        val mbStreetsProvider = MapBoxTileProvider("", "")
+        val mbStreetsProvider = MapBoxTileProvider("?access_token=pk.eyJ1IjoibWFyc2RldiIsImEiOiJjaXV4MjY5MGQwNHk3MnVwc21ubm1mcGtiIn0.7S5uxzW6PsgufoZqAY1mww", "G:\\mapbox-tiles")
         provider.tileProviderProperty().set(mbStreetsProvider)
         provider.tileTypeProperty().set(mbStreetsProvider.getTileType(MapBoxTileType.MAPBOX_STREETS))
 
@@ -43,6 +45,7 @@ class MapViewDemo : Application() {
         map.setViewport(30.0, -95.00, 29.1, -95.90)
 //          map.setCenter(29.70, -95.81)
         showMyLocation()
+        addBuses()
         map.setZoom(10.0)
 
         val licenseLayer = LicenseLayer(provider)
@@ -55,12 +58,32 @@ class MapViewDemo : Application() {
     }
 
     private fun showMyLocation() {
-        val im = this.javaClass.getResource("/com/marsev/gmkt/demo/mylocation.png")
+        val im = this.javaClass.getResource("/com/marsdev/gmkt/demo/mylocation.png")
         val image = Image(im.toString())
         val positionLayer = PositionLayer(ImageView(image), (image.width / -2.0), (image.height / -2.0))
         map.getLayers().add(positionLayer)
         positionLayer.updatePosition(29.70, -95.81)
         map.centerLatitudeProperty().addListener { i -> System.out.println("center of map: lat = " + map.centerLatitudeProperty().get() + ", lon = " + map.centerLongitudeProperty().get()) }
+    }
+
+    fun addBuses() {
+        val multiPositionLayer = MultiPositionLayer(map)
+        val reader = OneLineReader()
+        val placemarks = reader.getPlacemarks("D:\\trading-work\\ercot\\network\\2017.JUL.Monthly.Auction.OneLineDiagram.kml")
+        val buses = reader.processBuses(placemarks)
+//        val branches = reader.processBranches(placemarks, buses)
+        val im = this.javaClass.getResource("/com/marsdev/gmkt/demo/mylocation.png")
+
+        buses.values.asSequence().map { it ->
+            val circle = Circle(2.0)
+
+            val tooltip = Tooltip(it.name)
+            Tooltip.install(circle, tooltip)
+
+            multiPositionLayer.addNode(circle, it.latitude ?: 0.0, it.longitude ?: 0.0)
+        }
+
+        multiPositionLayer.refreshEntireLayer()
     }
 
     companion object {

@@ -66,7 +66,7 @@ class MultiPositionLayer(var layeredMap: LayeredMap) : Parent(), MapLayer {
         refreshSingleLayer(node)
     }
 
-    protected fun refreshEntireLayer() {
+    fun refreshEntireLayer() {
         for (node in children) {
             refreshSingleLayer(node)
         }
